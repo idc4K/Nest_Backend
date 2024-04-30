@@ -1,0 +1,41 @@
+version: '3.3'
+services:
+  peruzzo-backend:
+    restart: always
+    ports:
+      - 8080:3001
+    build:
+      dockerfile: Dockerfile.staging
+      context: .
+    depends_on:
+      - peruzzo-postgresdb
+        # condition: service_healthy
+    env_file:
+      - .env.staging
+    volumes:
+      - type: bind
+        source: ./certbot
+        target: /home/certbot
+    # tty: true # interact with the shell
+    # stdin_open: true
+  peruzzo-postgresdb:
+    restart: always
+    container_name: peruzzo-postgresdb
+    image: postgres:15.2-bullseye
+    # healthcheck:
+    #   test: ['CMD-SHELL', 'pg_isready -d mydb']
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 5
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - '6280:5432'
+    environment:
+      PGDATA: /data/postgres
+      POSTGRES_USER: Name
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: testDb
+    command: postgres -c autovacuum_max_workers=6 -c autovacuum_naptime=15 -c autovacuum_vacuum_scale_factor=0.05 -c autovacuum_analyze_scale_factor=0.05
+volumes:
+  postgres:

@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  aprClientRef          String?
+  email                 String    @unique
+  raisonSociale         String?
+  tva                   String?
+  codeNaf               String?
+  billingAdresss        String?
+  deliveryAdress        String?
+  telephone             String?
+  modeDeRetrait         Boolean?
+  paiementA30Jours      Boolean?
+  displayName           String?
+  imageUrl              String?
+  emailConfirmed        Boolean   @default(false)
+  accessTokenExpiresUtc DateTime?
+  accessToken           String?
+  password              String?
+  oneTimePassword       String?
+  state                 String?
+  createdAt             DateTime  @default(now())
+  modifiedAt            DateTime? @updatedAt
+  createdBy             String
+  modifiedBy            String?
+
+  orders             Order[]              @relation("orders")
+  carts              Cart[]               @relation("carts")
+  bookmarkedProducts BookmarkedProducts[] @relation("bookmarkedProducts")
+  refreshTokenId     String?              @unique()
+  refreshToken       RefreshToken?
+  providers          Provider[]
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid())
+  createdBy    String?
+  createdAt    DateTime? @default(now())
+  modifiedBy   String?
+  modifiedAt   DateTime? @updatedAt
+  userEmail    String    @unique()
+  refreshToken String?
+  expiresUtc   DateTime?
+  issuedUtc    DateTime?
+
+  userId String? @unique()
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+}
+
+model Provider {
+  provider   String
+  createdBy  String?
+  createdAt  DateTime? @default(now())
+  modifiedBy String?
+  modifiedAt DateTime? @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([provider, userId])
+}
+
+model Order {
+  id          String    @id @default(uuid())
+  aprOrderRef String?
+  status      String    @default("pending")
+  comment     String?
+  isPaid      Boolean   @default(false)
+  createdBy   String
+  modifiedBy  String?
+  createdAt   DateTime  @default(now())
+  modifiedAt  DateTime? @updatedAt
+
+  cart   Cart   @relation(fields: [cartId], references: [id])
+  cartId  String @unique
+  user   User   @relation(name: "orders", fields: [userId], references: [id])
+  userId String
+}
+
+model Cart {
+  id                String    @id @default(uuid())
+  departingDate     DateTime?
+  comment           String?
+  initialTotalPrice Float?
+  francoTotalPrice  Float?
+  status            String?
+  createdBy         String
+  modifiedBy        String?
+  createdAt         DateTime  @default(now())
+  modifiedAt        DateTime? @updatedAt
+
+  palettes Palette[] @relation("palettes")
+  order    Order?
+  user     User      @relation(name: "carts", fields: [userId], references: [id])
+  userId   String
+}
+
+model Palette {
+  id            String    @id @default(uuid())
+  paletteNumber Int?
+  paletteLimit  Int?
+  totalPrice    Float?
+  createdBy     String
+  modifiedBy    String?
+  createdAt     DateTime  @default(now())
+  modifiedAt    DateTime? @updatedAt
+
+  productRows ProductRow[] @relation("productRows")
+  cart        Cart         @relation(name: "palettes", fields: [cartId], references: [id])
+  cartId      String
+}
+
+model ProductRow {
+  id               String    @id @default(uuid())
+  productReference String?
+  designation      String?
+  description      String?
+  numberOfPackage  Int?
+  weight           Float?
+  initialPrice     Float?
+  createdBy        String
+  modifiedBy       String?
+  createdAt        DateTime  @default(now())
+  modifiedAt       DateTime? @updatedAt
+
+  palette   Palette @relation(name: "productRows", fields: [paletteId], references: [id])
+  paletteId String
+}
+
+model BookmarkedProducts {
+  id            String    @id @default(uuid())
+  aprProductRef String?
+  provenance    String?
+  rayon         String?
+  createdBy     String
+  modifiedBy    String?
+  createdAt     DateTime  @default(now())
+  modifiedAt    DateTime? @updatedAt
+
+  user   User?   @relation(name: "bookmarkedProducts", fields: [userId], references: [id])
+  userId String?
+}
